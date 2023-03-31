@@ -7,3 +7,4 @@ go.sum
 build/**
 config/*.yaml
 *.ipynb
+validation/*
