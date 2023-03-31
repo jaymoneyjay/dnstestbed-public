@@ -16,6 +16,6 @@ delayedZones:
   - "target-com"
 warmup:
   - "target.com."
-dest: example
+dest: example/results
 saveLogs: true
 testbed: example/testbed.yaml

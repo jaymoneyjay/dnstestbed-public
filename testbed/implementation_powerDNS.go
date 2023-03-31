@@ -32,13 +32,13 @@ func (p powerDNS) reload() error {
 		return err
 	}
 	if !matched {
-		err = errors.New(fmt.Sprintf("powerDNS could not be started successfully: %s", execResult.StdOut))
+		err = errors.New(fmt.Sprintf("powerDNS could not be started successfully: \nstdout: %s\nstderr: %s", execResult.StdOut, execResult.StdErr))
 		return err
 	}
 	return nil
 }
 
-func (p powerDNS) start() {
+func (p powerDNS) start() error {
 	execResult, err := p.container.Exec([]string{"service", "pdns-recursor", "start"})
 	if err != nil {
 		panic(err)
@@ -48,9 +48,9 @@ func (p powerDNS) start() {
 		panic(err)
 	}
 	if !matched {
-		err = errors.New(fmt.Sprintf("powerDNS could not be started successfully: %s", execResult.StdOut))
-		panic(err)
+		return errors.New(fmt.Sprintf("powerDNS could not be started successfully: \nstdout: %s\nstderr: %s", execResult.StdOut, execResult.StdErr))
 	}
+	return nil
 }
 
 func (p powerDNS) flushCache() error {
@@ -62,7 +62,7 @@ func (p powerDNS) filterQueries(queryLog []byte) []byte {
 	return queryLog
 }
 
-func (p powerDNS) SetConfig(qmin, reload bool) {
+func (p powerDNS) SetConfig(qmin, reload bool) error {
 	tmpl, err := template.ParseFiles(filepath.Join(p.templatesDir, "additional.conf"))
 	if err != nil {
 		panic(err)
@@ -84,7 +84,8 @@ func (p powerDNS) SetConfig(qmin, reload bool) {
 	if reload {
 		err := p.reload()
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
+	return nil
 }

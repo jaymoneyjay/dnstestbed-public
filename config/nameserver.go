@@ -1,6 +1,9 @@
 package config
 
-import "path/filepath"
+import (
+	"path/filepath"
+	"strings"
+)
 
 type NameserverInput struct {
 	IP    string
@@ -21,6 +24,9 @@ type Nameserver struct {
 func (c *Config) newNameServer(build string, input *NameserverInput) (*Nameserver, error) {
 	var zones []*Zone
 	for _, zoneInput := range input.Zones {
+		if !strings.HasSuffix(zoneInput.QName, ".") {
+			zoneInput.QName += "."
+		}
 		zone, err := c.newZone(build, zoneInput)
 		if err != nil {
 			return nil, err

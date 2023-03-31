@@ -41,16 +41,10 @@ func (e *Experiment) Run(testbed *testbed.Testbed) error {
 	var dataResult []int
 	var dataQuery []string
 	perm := os.FileMode(0777)
-	resultDir := filepath.Join(e.config.Dest, e.config.Name)
-	if _, err := os.Stat(resultDir); err == nil {
-		if err := os.RemoveAll(resultDir); err != nil {
-			return err
-		}
-	}
-	if err := os.Mkdir(resultDir, perm); err != nil {
+	if err := os.Mkdir(e.config.Dest, perm); err != nil {
 		return err
 	}
-	logDir := filepath.Join(resultDir, "logs")
+	logDir := filepath.Join(e.config.Dest, "logs")
 	if err := os.Mkdir(logDir, perm); err != nil {
 		return err
 	}
@@ -80,7 +74,9 @@ func (e *Experiment) Run(testbed *testbed.Testbed) error {
 		if err != nil {
 			return err
 		}
-		resolver.SetConfig(e.config.QMin, true)
+		if err := resolver.SetConfig(e.config.QMin, true); err != nil {
+			return err
+		}
 		for _, zoneConfig := range zoneConfigurations {
 			if strings.HasPrefix(zoneConfig.Name(), ".") {
 				err := bar.Add(len(e.config.Delay))
@@ -97,7 +93,7 @@ func (e *Experiment) Run(testbed *testbed.Testbed) error {
 					if err != nil {
 						return err
 					}
-					if isDuration {
+					if e.config.Warmup != nil {
 						e.warmup(testbed, resolverID)
 					}
 					testbed.FlushQueryLogs()
@@ -141,7 +137,7 @@ func (e *Experiment) Run(testbed *testbed.Testbed) error {
 		series.New(dataQuery, series.String, "query"),
 	)
 	resultsFile, err := os.Create(
-		filepath.Join(resultDir, "data.csv"),
+		filepath.Join(e.config.Dest, "data.csv"),
 	)
 	if err != nil {
 		return err

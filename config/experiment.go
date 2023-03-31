@@ -30,7 +30,6 @@ type query struct {
 func (c *Config) LoadExperimentConfig(path string) (*Experiment, error) {
 	c.v.SetDefault("saveLogs", true)
 	c.v.SetDefault("delay", []int{0})
-	c.v.SetDefault("dest", filepath.Join("validation", "results"))
 	c.v.SetConfigFile(path)
 	if err := c.v.ReadInConfig(); err != nil {
 		return nil, err
@@ -38,6 +37,15 @@ func (c *Config) LoadExperimentConfig(path string) (*Experiment, error) {
 	experimentConfig := &Experiment{}
 	if err := c.v.Unmarshal(experimentConfig); err != nil {
 		return nil, err
+	}
+	if experimentConfig.Testbed == "" {
+		experimentConfig.Testbed = filepath.Join(filepath.Dir(path), "testbed.yaml")
+	}
+	if experimentConfig.ZonesDir == "" {
+		experimentConfig.ZonesDir = filepath.Join(filepath.Dir(path), "zones")
+	}
+	if experimentConfig.Dest == "" {
+		experimentConfig.Dest = filepath.Join(filepath.Dir(path), "results")
 	}
 	return experimentConfig, nil
 }

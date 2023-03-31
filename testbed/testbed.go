@@ -216,7 +216,9 @@ func New(testbedConfig *config.Testbed) *Testbed {
 
 func (t *Testbed) SetQMIN(enable bool) {
 	for _, resolver := range t.Resolvers {
-		resolver.SetConfig(enable, true)
+		if err := resolver.SetConfig(enable, true); err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -229,8 +231,8 @@ func (t *Testbed) SetDefaultZones() {
 				parentID := "root"
 				subZonesMap[parentID] = append(subZonesMap[parentID], labels[0])
 			}
-			if len(labels) > 2 {
-				parentID := config.GenerateZoneID(strings.Join(labels[1:], "."))
+			if len(labels) == 3 {
+				parentID := labels[1]
 				subZonesMap[parentID] = append(subZonesMap[parentID], labels[0])
 			}
 		}

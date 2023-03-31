@@ -20,7 +20,7 @@ var cmdRun = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		configStat, err := os.Stat(args[0])
 		if err != nil {
-			return nil
+			return err
 		}
 		if runAll {
 			if !configStat.IsDir() {

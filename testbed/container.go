@@ -11,18 +11,20 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
 
 type Container struct {
-	client client.APIClient
-	ctx    context.Context
-	logger zerolog.Logger
-	ID     string
-	Log    string
-	Config string
-	ip     string
+	client              client.APIClient
+	ctx                 context.Context
+	logger              zerolog.Logger
+	ID                  string
+	Log                 string
+	Config              string
+	ip                  string
+	commonErrorPatterns []string
 }
 
 func NewContainer(id, dir, ip string) *Container {
@@ -66,6 +68,10 @@ func NewContainer(id, dir, ip string) *Container {
 		Log:    logs,
 		Config: config,
 		ip:     ip,
+		commonErrorPatterns: []string{
+			"error:",
+			"rndc: connect failed:",
+		},
 	}
 }
 
@@ -81,18 +87,52 @@ func (c *Container) Exec(cmd []string) (ExecResult, error) {
 		AttachStderr: true,
 		Cmd:          cmd,
 	}
+	var execResp ExecResult
+	var err error
+	timeout := 0 * time.Second
+	numRetries := 10
+	ok := true
+	for ok && numRetries > 0 {
+		time.Sleep(timeout)
+		execResp, err = c.exec(execConfig)
+		if err != nil {
+			return execResp, err
+		}
+		numRetries -= 1
+		timeout += 1 * time.Second
+		ok = c.matchesError(execResp.StdErr)
+	}
+	return execResp, nil
+}
+
+func (c *Container) exec(execConfig types.ExecConfig) (ExecResult, error) {
 	createResp, err := c.client.ContainerExecCreate(c.ctx, c.ID, execConfig)
 	if err != nil {
 		return ExecResult{}, err
 	}
 	execResp, err := c.inspectExecResp(createResp.ID)
+	c.logger.Info().
+		Str("containerID", c.ID).
+		Msg(fmt.Sprintf("stdout: %s\nstderr: %s", execResp.StdOut, execResp.StdErr))
 	if err != nil {
 		return ExecResult{}, err
 	}
-	c.logger.Info().
-		Str("containerID", c.ID).
-		Msg(execResp.StdOut)
 	return execResp, nil
+}
+
+func (c *Container) matchesError(response string) bool {
+	matched := false
+	var err error
+	for _, pattern := range c.commonErrorPatterns {
+		matched, err = regexp.MatchString(pattern, response)
+		if err != nil {
+			panic(err)
+		}
+		if matched {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *Container) inspectExecResp(execID string) (ExecResult, error) {

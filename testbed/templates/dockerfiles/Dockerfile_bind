@@ -29,13 +29,11 @@ RUN apt-get install -y \
     fstrm-bin libfstrm0 libfstrm-dev \
     libprotobuf-c-dev libprotobuf-c1
 
-ARG VERSION=9.16.3
+ARG VERSION
 RUN wget https://ftp.isc.org/isc/bind9/$VERSION/bind-$VERSION.tar.xz
-
 RUN tar xf bind-$VERSION.tar.xz
 WORKDIR bind-$VERSION
 RUN ./configure --enable-dnstap --sysconfdir=/etc/bind --without-python
-
 RUN make
 RUN make install
 RUN ldconfig

@@ -33,13 +33,13 @@ func (u unbound) reload() error {
 		return err
 	}
 	if !reloadOK {
-		err = errors.New(fmt.Sprintf("unbound cache could not be restarted successfully: %s", execResult.StdOut))
+		err = errors.New(fmt.Sprintf("unbound cache could not be restarted successfully: \nstdout: %s\nstderr: %s", execResult.StdOut, execResult.StdErr))
 		return err
 	}
 	return nil
 }
 
-func (u unbound) start() {
+func (u unbound) start() error {
 	execResult, err := u.container.Exec([]string{"unbound-control-setup"})
 	if err != nil {
 		panic(err)
@@ -49,8 +49,8 @@ func (u unbound) start() {
 		panic(err)
 	}
 	if !matched {
-		err = errors.New(fmt.Sprintf("unbound setup not executed successfully: %s", execResult.StdOut))
-		panic(err)
+		err = errors.New(fmt.Sprintf("unbound setup not executed successfully: \nstdout: %s\nstderr: %s", execResult.StdOut, execResult.StdErr))
+		return err
 	}
 	execResult, err = u.container.Exec([]string{"unbound-control", "start"})
 	if err != nil {
@@ -61,9 +61,10 @@ func (u unbound) start() {
 		panic(err)
 	}
 	if !matched {
-		err = errors.New(fmt.Sprintf("unbound start not executed successfully: %s", execResult.StdOut))
-		panic(err)
+		err = errors.New(fmt.Sprintf("unbound start not executed successfully: \nstdout: %s\nstderr: %s", execResult.StdOut, execResult.StdErr))
+		return err
 	}
+	return nil
 }
 
 func (u unbound) flushCache() error {
@@ -85,14 +86,14 @@ func (u unbound) filterQueries(queryLog []byte) []byte {
 	return []byte(strings.Join(queries, "\n"))
 }
 
-func (u unbound) SetConfig(qmin, reload bool) {
+func (u unbound) SetConfig(qmin, reload bool) error {
 	tmpl, err := template.ParseFiles(filepath.Join(u.templatesDir, "unbound.conf"))
 	if err != nil {
-		panic(err)
+		return err
 	}
 	dest, err := os.Create(filepath.Join(u.container.Config, "unbound.conf"))
 	if err != nil {
-		panic(err)
+		return err
 	}
 	options := &templates.Resolver{
 		QMin: "no",
@@ -105,9 +106,9 @@ func (u unbound) SetConfig(qmin, reload bool) {
 		panic(err)
 	}
 	if reload {
-		err := u.reload()
-		if err != nil {
-			panic(err)
+		if err := u.reload(); err != nil {
+			return err
 		}
 	}
+	return nil
 }

@@ -1,4 +1,4 @@
-FROM ubuntu:bionic
+FROM ubuntu:kinetic
 
 RUN apt-get update \
     && apt-get install -y \
@@ -13,7 +13,8 @@ RUN apt-get update \
     libpcap-dev  \
     libldns-dev  \
     zlib1g-dev  \
-    libyaml-perl
+    libyaml-perl \
+    dnscap
 
 
 ARG VERSION

@@ -120,12 +120,13 @@ func unbound(version string) (*implementation, error) {
 		validatedVersion = "1.16.3"
 		err = errors.New(fmt.Sprintf("unbound version %s is not supported (only major versions supported); fallback to version %s", version, validatedVersion))
 	}*/
+	logsTarget := filepath.Join("/usr", "local", "etc", "logs")
 	return &implementation{
 		Name:            "unbound",
 		Version:         version,
 		ConfigTarget:    filepath.Join("/usr", "local", "etc", "unbound"),
 		RootHintsTarget: filepath.Join("/usr", "local", "etc", "unbound", "db.root"),
-		LogsTarget:      filepath.Join("/usr", "local", "etc", "logs"),
+		LogsTarget:      logsTarget,
 		QMinParameter: map[bool]string{
 			true:  "yes",
 			false: "no",
@@ -134,5 +135,6 @@ func unbound(version string) (*implementation, error) {
 			"unbound-control-setup",
 			"unbound-control start",
 		},
+		StartDNSCap: fmt.Sprintf("dnscap -g 2> %s", filepath.Join(logsTarget, "trace.txt")),
 	}, err
 }

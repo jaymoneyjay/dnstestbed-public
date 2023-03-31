@@ -35,21 +35,21 @@ func (b bind) reload() error {
 		return err
 	}
 	if !reloadOK {
-		err = errors.New(fmt.Sprintf("bind could not be reloaded successfully: %s", execResult.StdOut))
+		err = errors.New(fmt.Sprintf("bind could not be reloaded successfully: \nstdout: %s\nstderr: %s", execResult.StdOut, execResult.StdErr))
 		return err
 	}
 	return nil
 }
 
-func (b bind) start() {
+func (b bind) start() error {
 	execResult, err := b.container.Exec([]string{"named", "-u", "bind", "-4", "-d", "2"})
 	if err != nil {
-		panic(err)
+		return err
 	}
 	if execResult.StdOut != "" {
-		err = errors.New(fmt.Sprintf("bind could not be started successfully: %s", execResult.StdOut))
-		panic(err)
+		return errors.New(fmt.Sprintf("bind could not be started successfully: \nstdout: %s\nstderr: %s", execResult.StdOut, execResult.StdErr))
 	}
+	return nil
 }
 
 func (b bind) flushCache() error {
@@ -62,7 +62,7 @@ func (b bind) flushCache() error {
 		return err
 	}
 	if !flushedOK {
-		err = errors.New(fmt.Sprintf("bind cache could not be flushed successfully: %s", execResult.StdOut))
+		err = errors.New(fmt.Sprintf("bind cache could not be flushed successfully: \nstdout: %s\nstderr: %s", execResult.StdOut, execResult.StdErr))
 		return err
 	}
 	return nil
@@ -83,7 +83,7 @@ func (b bind) filterQueries(queryLog []byte) []byte {
 	return []byte(strings.Join(queries, "\n"))
 }
 
-func (b bind) SetConfig(qmin, reload bool) {
+func (b bind) SetConfig(qmin, reload bool) error {
 	tmpl, err := template.ParseFiles(filepath.Join(b.templatesDir, "named.conf.options"))
 	if err != nil {
 		panic(err)
@@ -105,7 +105,8 @@ func (b bind) SetConfig(qmin, reload bool) {
 	if reload {
 		err := b.reload()
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
+	return nil
 }
